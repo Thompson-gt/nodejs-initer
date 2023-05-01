@@ -15,7 +15,7 @@ import threading
 # inherit the threading class to allow methods in the class to be multithreaded
 
 # enum for all of the colors
-from .colors import Color, RESET_COLOR
+from colors import Color, RESET_COLOR
 
 
 class Generator(threading.Thread):
