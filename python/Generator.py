@@ -8,23 +8,25 @@ import json
 import sys
 import time
 import aiohttp
+
 # was used for the __new__query method
 # import asyncio
 import requests
 import threading
-# inherit the threading class to allow methods in the class to be multithreaded
+
 
 # enum for all of the colors
 from colors import Color, RESET_COLOR
 
 
+# inherit the threading class to allow methods in the class to be multithreaded
 class Generator(threading.Thread):
     # this will be the max time out for the threads when joining
     __THREAD_TIMEOUT: Final[float] = 5.0
     # genric for custom raise function to so it can be genertic for all of the exceptions that inherit from base
-    ET = TypeVar('ET', bound=BaseException)
+    ET = TypeVar("ET", bound=BaseException)
     # on versions 3.10 they added a type hint for aliasing but im on 3.9 so cant hint but the
-    # linker pickes up on it
+    # linter pickes up on it
     # alias for the funcion to build exceptions more info where the alias is used
     ExceptionType = Callable[[str], ET]
 
@@ -55,56 +57,69 @@ class Generator(threading.Thread):
         # print("\n" * 10)
         return
 
-    def __check_for_flags(self,) -> bool:
-        return len(self.args) >= 2 and (self.args[1] == "-d" or self.args[1] == "--default")
+    def __check_for_flags(
+        self,
+    ) -> bool:
+        return len(self.args) >= 2 and (
+            self.args[1] == "-d" or self.args[1] == "--default"
+        )
 
     def __get_project_home(self) -> str:
         printable = ""
         choice = ""
         io = ""
         try:
-            choice = input(
-                "relative or absolute path for the project?\n").lower()
-            printable = "relative" if choice[0] == 'r' else "absolute"
-            io = input(
-                f"where do you want the project to live:({printable})\n")
+            choice = input("relative or absolute path for the project?\n").lower()
+            printable = "relative" if choice[0] == "r" else "absolute"
+            io = input(f"where do you want the project to live:({printable})\n")
             if not self.__valid_user_input(choice, printable, io):
                 raise ValueError
         except ValueError:
             i = input(
-                Color.get_color(Color.YELLOW)+"there was an error when the inputed value! would you like to re-enter the value?\n"+RESET_COLOR).lower()
+                Color.get_color(Color.YELLOW)
+                + "there was an error when the inputed value! would you like to re-enter the value?\n"
+                + RESET_COLOR
+            ).lower()
             if i[0] == "y":
-                choice = input(
-                    "relative or absolute path for the project?\n").lower()
-                printable = "relative" if choice[0] == 'r' else "absolute"
-                io = input(
-                    f"where do you want the project to live:({printable})\n")
+                choice = input("relative or absolute path for the project?\n").lower()
+                printable = "relative" if choice[0] == "r" else "absolute"
+                io = input(f"where do you want the project to live:({printable})\n")
             else:
                 self.__handle_exit()
         finally:
             path = os.getcwd() + io
-            return os.path.join(path, "src") if printable == 'relative' else os.path.join(io, "src")
+            return (
+                os.path.join(path, "src")
+                if printable == "relative"
+                else os.path.join(io, "src")
+            )
 
     def __get_module_type(self) -> str:
         io = ""
         try:
-            io = input(
-                "what type of javascript:\n Module(m):\n Commonjs(c):\n").lower()
+            io = input("what type of javascript:\n Module(m):\n Commonjs(c):\n").lower()
             if not self.__valid_user_input(io):
                 raise ValueError
         except ValueError:
             io = self.__handle_value_erorr()
         finally:
             self.__clear_screen()
-            self.__custom_print(Color.CYAN, "module type", begining_tab=True,
-                                seperator="->", ending_newline=True, post_seperator=io)
-            return "module" if io[0] == 'm' else "commonjs"
+            self.__custom_print(
+                Color.CYAN,
+                "module type",
+                begining_tab=True,
+                seperator="->",
+                ending_newline=True,
+                post_seperator=io,
+            )
+            return "module" if io[0] == "m" else "commonjs"
 
-    def __js_or_ts(self,) -> None:
+    def __js_or_ts(
+        self,
+    ) -> None:
         io = ""
         try:
-            io = input(
-                "would you like to use typescript or javascript\n").lower()
+            io = input("would you like to use typescript or javascript\n").lower()
             if not self.__valid_user_input(io):
                 raise ValueError
             if len(io) > 0 and io[0] == "t":
@@ -112,32 +127,48 @@ class Generator(threading.Thread):
                 self.__build_tsconfig()
                 self.__build_dst_dir()
                 self.__clear_screen()
-                self.__custom_print(Color.CYAN, "js or ts -> typescript", begining_tab=True,
-                                    seperator="->", ending_newline=True, post_seperator=io)
+                self.__custom_print(
+                    Color.CYAN,
+                    "js or ts -> typescript",
+                    begining_tab=True,
+                    seperator="->",
+                    ending_newline=True,
+                    post_seperator=io,
+                )
             else:
                 self.__clear_screen()
-                self.__custom_print(Color.CYAN, "js or ts -> javascript", begining_tab=True,
-                                    seperator="->", ending_newline=True, post_seperator=io)
+                self.__custom_print(
+                    Color.CYAN,
+                    "js or ts -> javascript",
+                    begining_tab=True,
+                    seperator="->",
+                    ending_newline=True,
+                    post_seperator=io,
+                )
         except ValueError:
-            self.__custom_print(Color.YELLOW,
-                                "invalid input, will default to javascript")
+            self.__custom_print(
+                Color.YELLOW, "invalid input, will default to javascript"
+            )
 
     def create_git_ignore(self) -> None:
         self.__custom_print(Color.GREEN, "creating the .git file...")
         try:
-            with open(os.path.join(self.path, ".gitignore"), 'w') as f:
+            with open(os.path.join(self.path, ".gitignore"), "w") as f:
                 if self.ts:
                     f.write("./tsconfig.json\n")
                 f.write("./package.json\n")
                 f.write("./env\n")
         except FileExistsError:
             i = input(
-                Color.get_color(Color.YELLOW)+"the gitignore file already exists!\n would you like to overwrite the file?"+RESET_COLOR).lower()
+                Color.get_color(Color.YELLOW)
+                + "the gitignore file already exists!\n would you like to overwrite the file?"
+                + RESET_COLOR
+            ).lower()
             if not self.__valid_user_input(i):
                 self.__custom_raise(ValueError, "invalid user input")
             if i == "y" or i == "yes":
                 os.remove(os.path.join(self.path, ".gitignore"))
-                with open(os.path.join(self.path, ".gitignore"), 'w') as f:
+                with open(os.path.join(self.path, ".gitignore"), "w") as f:
                     f.write(".package.json\n")
                     f.write(".env")
             else:
@@ -146,17 +177,20 @@ class Generator(threading.Thread):
     def create_env_file(self) -> None:
         self.__custom_print(Color.GREEN, "creating the .env file...")
         try:
-            with open(os.path.join(self.path, ".env"), 'w') as f:
+            with open(os.path.join(self.path, ".env"), "w") as f:
                 f.write("DB_URI=? \n")
                 f.write("PORT=8080")
         except FileExistsError:
             i = input(
-                Color.get_color(Color.YELLOW)+"the env file already exists!\n would you like to overwrite the file?"+RESET_COLOR).lower()
+                Color.get_color(Color.YELLOW)
+                + "the env file already exists!\n would you like to overwrite the file?"
+                + RESET_COLOR
+            ).lower()
             if not self.__valid_user_input(i):
                 self.__custom_raise(ValueError, "invalid user input")
             if i == "y" or i == "yes":
                 os.remove(os.path.join(self.path, ".gitignore"))
-                with open(os.path.join(self.path, ".env"), 'w') as f:
+                with open(os.path.join(self.path, ".env"), "w") as f:
                     f.write("DB_URI=? \n")
                     f.write("PORT=8080")
             else:
@@ -164,10 +198,9 @@ class Generator(threading.Thread):
 
     def create_index_file(self) -> None:
         ending = ".ts" if self.ts else ".js"
-        self.__custom_print(
-            Color.GREEN, f"creating the index{ending} file ...")
+        self.__custom_print(Color.GREEN, f"creating the index{ending} file ...")
         try:
-            with open(os.path.join(self.path, f"index{ending}"), 'w') as f:
+            with open(os.path.join(self.path, f"index{ending}"), "w") as f:
                 if self.js_type == "commonjs":
                     f.write("const dotenv = require('dotenv').config();\n")
                     f.write("const express = require('express');\n\n\n")
@@ -177,15 +210,19 @@ class Generator(threading.Thread):
                 f.write("const app = express()\n\n")
                 f.write("app.use(json())\n\n")
                 f.write(
-                    "app.listen(process.env.PORT || 5000,()=> console.log('sever is running'))")
+                    "app.listen(process.env.PORT || 5000,()=> console.log('sever is running'))"
+                )
         except FileExistsError:
             i = input(
-                Color.get_color(Color.YELLOW)+"the index.js file already exists!\n would you like to overwrite the file?"+RESET_COLOR).lower()
+                Color.get_color(Color.YELLOW)
+                + "the index.js file already exists!\n would you like to overwrite the file?"
+                + RESET_COLOR
+            ).lower()
             if not self.__valid_user_input(i):
                 self.__custom_raise(ValueError, "invalid user input")
             if i == "y" or i == "yes":
                 os.remove(os.path.join(self.path, ".gitignore"))
-                with open(os.path.join(self.path, f"index{ending}"), 'w') as f:
+                with open(os.path.join(self.path, f"index{ending}"), "w") as f:
                     if self.js_type == "commonjs":
                         f.write("const dotenv = require('dotenv').config();\n")
                         f.write("const express = require('express');\n\n\n")
@@ -195,17 +232,22 @@ class Generator(threading.Thread):
                 f.write("const app = express()\n\n")
                 f.write("app.use(json())\n\n")
                 f.write(
-                    "app.listen(process.env.PORT || 5000,()=> console.log('sever is running'))")
+                    "app.listen(process.env.PORT || 5000,()=> console.log('sever is running'))"
+                )
             else:
                 self.__handle_exit()
 
-    def __build_tsconfig(self,) -> None:
+    def __build_tsconfig(
+        self,
+    ) -> None:
         self.__custom_print(Color.GREEN, "building the typescript config")
         config = {}
         # set configurations for the tsc compiler
         config["compilerOptions"] = {}
         config["compilerOptions"]["target"] = "es2021"
-        config["compilerOptions"]["module"] = "ES6" if self.js_type == "module" else "CommonJS"
+        config["compilerOptions"]["module"] = (
+            "ES6" if self.js_type == "module" else "CommonJS"
+        )
         config["compilerOptions"]["strict"] = True
         config["compilerOptions"]["removeComments"] = True
         config["compilerOptions"]["preserveConstEnums"] = True
@@ -214,14 +256,14 @@ class Generator(threading.Thread):
         # specities the dir for the compiled js
         config["include"] = ["src/**/*"]
         try:
-            with open(os.path.join(self.path, "../tsconfig.json"), 'w') as f:
+            with open(os.path.join(self.path, "../tsconfig.json"), "w") as f:
                 json.dump(config, f)
         except FileExistsError:
-            raise self.__custom_raise(
-                FileExistsError, "package.json already exits!")
+            raise self.__custom_raise(FileExistsError, "package.json already exits!")
         except json.JSONDecodeError:
             raise self.__custom_raise(
-                BaseException, "unexpected error when serializing the package object")
+                BaseException, "unexpected error when serializing the package object"
+            )
 
     def create_package_json(self) -> None:
         self.__custom_print(Color.GREEN, "creating the package.json...")
@@ -231,9 +273,7 @@ class Generator(threading.Thread):
         package["description"] = self.desc
         package["main"] = "index.js"
         package["type"] = self.js_type
-        package["scripts"] = {
-            "test": "echo "
-        }
+        package["scripts"] = {"test": "echo "}
         if "nodemon" in self.dependecies:
             package["scripts"]["start"] = "nodemon index.js"
         if self.ts:
@@ -249,27 +289,29 @@ class Generator(threading.Thread):
         threads = self.__get__threads(package)
         self.__handle_threads(threads)
         try:
-            with open(os.path.join(self.path, "package.json"), 'w') as f:
+            with open(os.path.join(self.path, "package.json"), "w") as f:
                 json.dump(package, f)
         except FileExistsError:
-            raise self.__custom_raise(
-                FileExistsError, "package.json already exits!")
+            raise self.__custom_raise(FileExistsError, "package.json already exits!")
         except json.JSONDecodeError:
             raise self.__custom_raise(
-                BaseException, "unexpected error when serializing the package object")
+                BaseException, "unexpected error when serializing the package object"
+            )
 
     def __get__threads(self, package: dict) -> list[threading.Thread]:
         threads = []
         try:
             for d in self.dependecies:
                 t = threading.Thread(
-                    target=self.__threaded_query_npm, args=(package, d))
+                    target=self.__threaded_query_npm, args=(package, d)
+                )
                 threads.append(t)
                 t.start()
             return threads
         except:
             raise self.__custom_raise(
-                threading.ThreadError, "error when creating the thread")
+                threading.ThreadError, "error when creating the thread"
+            )
 
     def __handle_threads(self, threads: list[threading.Thread]) -> None:
         try:
@@ -277,7 +319,8 @@ class Generator(threading.Thread):
                 thread.join(timeout=self.__THREAD_TIMEOUT)
         except:
             raise self.__custom_raise(
-                threading.ThreadError, "error when joining the thread")
+                threading.ThreadError, "error when joining the thread"
+            )
 
     def display_final_message(self) -> None:
         self.__clear_screen()
@@ -286,8 +329,7 @@ class Generator(threading.Thread):
         __success = "Project has been generated!\nHAVE FUN CODING!"
         if n == 0:
             self.__custom_print(Color.GREEN, __success)
-            self.__custom_print(Color.YELLOW,
-                                f"took: {time.time() - self.start_time}s")
+            self.__custom_print(Color.YELLOW, f"took: {time.time() - self.start_time}s")
         else:
             self.__custom_print(Color.YELLOW, __error)
             self.__display_error_depens()
@@ -295,61 +337,73 @@ class Generator(threading.Thread):
     def __display_error_depens(self) -> None:
         for d in self.error_depens:
             self.__custom_print(
-                Color.YELLOW, f"{d} not found!\n please check npm site to see if that dependice exists")
+                Color.YELLOW,
+                f"{d} not found!\n please check npm site to see if that dependice exists",
+            )
 
     @property
     def project_path(self) -> str:
         return self.path
 
-    def __build_dst_dir(self,) -> None:
+    def __build_dst_dir(
+        self,
+    ) -> None:
         try:
             os.makedirs(os.path.join(self.path, "../dst"), exist_ok=False)
         except:
             raise self.__custom_raise(
-                FileExistsError, "a project already exists in this directory")
+                FileExistsError, "a project already exists in this directory"
+            )
 
     def __create_dir(self) -> None:
         try:
             os.makedirs(self.path, exist_ok=False)
         except:
             raise self.__custom_raise(
-                FileExistsError, "a project already exists in this directory")
+                FileExistsError, "a project already exists in this directory"
+            )
 
     def create_routes(self) -> None:
         try:
             os.makedirs(os.path.join(self.path, "routes"), exist_ok=False)
         except:
             raise self.__custom_raise(
-                FileExistsError, "routes directiory already exists!")
+                FileExistsError, "routes directiory already exists!"
+            )
 
-    async def __new_query_npm(self, package: dict,) -> None:
+    async def __new_query_npm(
+        self,
+        package: dict,
+    ) -> None:
         async with aiohttp.ClientSession() as session:
             for depen in self.dependecies:
                 print(f"downloading {depen}...\n ")
                 async with session.get(f"https://api.npms.io/v2/search?q={depen}") as r:
                     version = await r.json()
-                    if version['total'] == 0:
+                    if version["total"] == 0:
                         self.error_depens.append(depen)
                     else:
-                        package["dependencies"][depen] = version['results'][0]['package']['version']
+                        package["dependencies"][depen] = version["results"][0][
+                            "package"
+                        ]["version"]
 
     def __query_npm(self, dep: str) -> str:
-        d = dep.replace(' ', '+')
-        r = requests.get(f"https://api.npms.io/v2/search?q={d}") .json()
-        return "not found" if r['total'] == 0 else r['results'][0]['package']['version']
+        d = dep.replace(" ", "+")
+        r = requests.get(f"https://api.npms.io/v2/search?q={d}").json()
+        return "not found" if r["total"] == 0 else r["results"][0]["package"]["version"]
 
     def __threaded_query_npm(self, package: dict, dep: str) -> None:
         if len(dep) <= 0:
             return
         r = requests.get(f"https://api.npms.io/v2/search?q={dep}").json()
-        if r['total'] == 0 or r == []:
+        if r["total"] == 0 or r == []:
             self.error_lock.acquire()
             self.error_depens.append(dep)
             self.error_lock.release()
             return
         else:
             self.package_lock.acquire()
-            package["dependencies"][dep] = r['results'][0]['package']['version']
+            package["dependencies"][dep] = r["results"][0]["package"]["version"]
             self.package_lock.release()
             return
 
@@ -358,14 +412,18 @@ class Generator(threading.Thread):
             os.makedirs(os.path.join(self.path, "controllers"), exist_ok=False)
         except:
             raise self.__custom_raise(
-                FileExistsError, "directory controllers already exits")
+                FileExistsError, "directory controllers already exits"
+            )
 
     def __handle_value_erorr(self) -> str:
-        c = input(Color.get_color(Color.YELLOW) +
-                  "erorr with the value that was entered! would you like to re-enter the value?\n "+RESET_COLOR).lower()
+        c = input(
+            Color.get_color(Color.YELLOW)
+            + "erorr with the value that was entered! would you like to re-enter the value?\n "
+            + RESET_COLOR
+        ).lower()
         if not self.__valid_user_input(c):
             raise self.__custom_raise(ValueError, "invalid user input")
-        if c[0] == 'n':
+        if c[0] == "n":
             self.__handle_exit()
         else:
             io = input("please re-enter the value\n")
@@ -383,8 +441,14 @@ class Generator(threading.Thread):
             i = self.__handle_value_erorr()
         finally:
             self.__clear_screen()
-            self.__custom_print(Color.CYAN, "name of project", begining_tab=True,
-                                seperator="->", ending_newline=True, post_seperator=i)
+            self.__custom_print(
+                Color.CYAN,
+                "name of project",
+                begining_tab=True,
+                seperator="->",
+                ending_newline=True,
+                post_seperator=i,
+            )
             return i
 
     def __get_desc(self) -> str:
@@ -397,33 +461,51 @@ class Generator(threading.Thread):
             i = self.__handle_value_erorr()
         finally:
             self.__clear_screen()
-            self.__custom_print(Color.CYAN, "desc of project", begining_tab=True,
-                                seperator="->", ending_newline=True, post_seperator=i)
+            self.__custom_print(
+                Color.CYAN,
+                "desc of project",
+                begining_tab=True,
+                seperator="->",
+                ending_newline=True,
+                post_seperator=i,
+            )
             return i
 
     def __get_author(self) -> str:
         i = ""
         try:
-            i = input(
-                "who is the author of this project(Your name)\n")
+            i = input("who is the author of this project(Your name)\n")
             if not self.__valid_user_input(i):
                 raise ValueError
         except ValueError:
             i = self.__handle_value_erorr()
         finally:
             self.__clear_screen()
-            self.__custom_print(Color.CYAN, "author of project", begining_tab=True,
-                                seperator="->", ending_newline=True, post_seperator=i)
+            self.__custom_print(
+                Color.CYAN,
+                "author of project",
+                begining_tab=True,
+                seperator="->",
+                ending_newline=True,
+                post_seperator=i,
+            )
             return i
 
     def __get_depens(self) -> list[str]:
         i = input(
-            "aditional dependices(Express and dotenv are already included)\n").split(' ')
+            "aditional dependices(Express and dotenv are already included)\n"
+        ).split(" ")
         return ["express", "dotenv", *i]
 
-    def __handle_exit(self,) -> NoReturn:
-        self.__custom_print(Color.GREEN, "the project was safely exited ",
-                            ending_newline=True, begining_tab=True)
+    def __handle_exit(
+        self,
+    ) -> NoReturn:
+        self.__custom_print(
+            Color.GREEN,
+            "the project was safely exited ",
+            ending_newline=True,
+            begining_tab=True,
+        )
         sys.exit(0)
 
     # force the optional inputs to be keword arguments
@@ -436,7 +518,7 @@ class Generator(threading.Thread):
         begining_tab: Optional[bool] = False,
         ending_newline: Optional[bool] = False,
         seperator: str = "",
-        post_seperator: str = ""
+        post_seperator: str = "",
     ) -> None:
         if type(message) != str:
             raise ValueError("the message needs to be of type str")
@@ -444,8 +526,9 @@ class Generator(threading.Thread):
             raise ValueError(f"invalid input for message :{message}")
         if type(color) != Color:
             raise ValueError("color must be of type color")
-        base_message = Color.get_color(
-            color) + message + seperator + post_seperator + RESET_COLOR
+        base_message = (
+            Color.get_color(color) + message + seperator + post_seperator + RESET_COLOR
+        )
         out = ""
         if begining_tab and ending_newline:
             out = "\t" + base_message + "\n"
@@ -461,7 +544,9 @@ class Generator(threading.Thread):
     # the exception type is a alias for callable str that returns a generic bound by exception class
     # then the function will return this generic meaning the return will be any exception that
     # derives from base exception class
-    def __custom_raise(self, exception_type: ExceptionType[ET], exception_message: str) -> ET:
+    def __custom_raise(
+        self, exception_type: ExceptionType[ET], exception_message: str
+    ) -> ET:
         if len(exception_message) <= 0:
             raise ValueError("exception_message can not be empty!")
         if not type(BaseException) == type(exception_type):
@@ -472,7 +557,9 @@ class Generator(threading.Thread):
         # return the built error instead of raising it here
         # if raised here the dispalyed raise line will be this funcion instead of when this function is called
         # (not the funcionality i want )
-        return exception_type(Color.get_color(Color.RED) + exception_message + RESET_COLOR)
+        return exception_type(
+            Color.get_color(Color.RED) + exception_message + RESET_COLOR
+        )
 
     # by passing args i can just iterate through any number of user_inputs to check
     # and if any are invalid return false to be handled later
@@ -487,7 +574,9 @@ class Generator(threading.Thread):
 
         return True
 
-    def __handle_commands_install(self,) -> None:
+    def __handle_commands_install(
+        self,
+    ) -> None:
         try:
             # make sure to change to the generated project path
             # or the tsc depencies will not install in the correct place
@@ -499,10 +588,11 @@ class Generator(threading.Thread):
             os.system("npm install")
             self.__clear_screen()
         except:
-            raise self.__custom_raise(OSError,
-                                      "error when running install commands")
+            raise self.__custom_raise(OSError, "error when running install commands")
 
-    def __default_info(self,) -> None:
+    def __default_info(
+        self,
+    ) -> None:
         self.path = os.path.join(os.getcwd(), "express-app")
         self.__create_dir()
         self.name = "user"
@@ -514,11 +604,19 @@ class Generator(threading.Thread):
         self.display_final_message()
         return
 
-    def __user_info(self,) -> None:
+    def __user_info(
+        self,
+    ) -> None:
         self.path = self.__get_project_home()
         self.__clear_screen()
-        self.__custom_print(Color.CYAN, "project home", begining_tab=True,
-                            seperator="->", ending_newline=True, post_seperator=self.path)
+        self.__custom_print(
+            Color.CYAN,
+            "project home",
+            begining_tab=True,
+            seperator="->",
+            ending_newline=True,
+            post_seperator=self.path,
+        )
         self.__create_dir()
         self.name = self.__get_name()
         self.desc = self.__get_desc()
