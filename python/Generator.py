@@ -123,6 +123,11 @@ class Generator(threading.Thread):
             if not self.__valid_user_input(io):
                 raise ValueError
             if len(io) > 0 and io[0] == "t":
+                if self.js_type == "commonjs":
+                    self.__custom_print(
+                        Color.YELLOW, "you are using commonjs with typescript",
+                        begining_tab=True,
+                    )
                 self.ts = True
                 self.__build_tsconfig()
                 self.__build_dst_dir()
